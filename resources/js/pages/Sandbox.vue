@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
+import { Head, router } from '@inertiajs/vue3'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 interface Course {
   id: number
@@ -24,9 +26,30 @@ interface CursorPaginatedCourses {
   prev_page_url: string | null
 }
 
-defineProps<{
+const props = defineProps<{
   courses: CursorPaginatedCourses
 }>()
+
+const loading = ref(false)
+
+const hasMore = computed(() => {
+  return props.courses.next_page_url !== null
+})
+
+const loadMore = () => {
+  if (loading.value || !hasMore.value) return
+  
+  loading.value = true
+  
+  router.visit(props.courses.next_page_url!, {
+    only: ['courses'],
+    preserveState: true,
+    preserveUrl: true,
+    onFinish: () => {
+      loading.value = false
+    }
+  })
+}
 </script>
 
 <template>
@@ -77,25 +100,22 @@ defineProps<{
         </Card>
       </div>
 
-      <!-- Cursor pagination info -->
-      <div class="mt-8 text-center text-sm text-muted-foreground">
-        Showing {{ courses.data.length }} courses per page
-        <div class="flex justify-center gap-4 mt-2">
-          <a 
-            v-if="courses.prev_page_url" 
-            :href="courses.prev_page_url"
-            class="text-blue-600 hover:text-blue-800"
-          >
-            ← Previous
-          </a>
-          <a 
-            v-if="courses.next_page_url" 
-            :href="courses.next_page_url"
-            class="text-blue-600 hover:text-blue-800"
-          >
-            Next →
-          </a>
-        </div>
+      <!-- Load More Button -->
+      <div class="mt-8 text-center">
+        <p class="text-sm text-muted-foreground mb-4">
+          Showing {{ courses.data.length }} courses
+        </p>
+        <Button 
+          v-if="hasMore"
+          @click="loadMore"
+          :disabled="loading"
+          class="px-8 py-2"
+        >
+          {{ loading ? 'Loading...' : 'Load More' }}
+        </Button>
+        <p v-else class="text-sm text-muted-foreground">
+          No more courses to load
+        </p>
       </div>
     </div>
   </AppLayout>
