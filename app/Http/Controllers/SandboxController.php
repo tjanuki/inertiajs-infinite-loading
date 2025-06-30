@@ -11,8 +11,8 @@ class SandboxController extends Controller
     public function index(Request $request)
     {
         $courses = Course::query()
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->orderBy('id', 'desc')
+            ->cursorPaginate(9);
 
         return Inertia::render('Sandbox', [
             'courses' => $courses,

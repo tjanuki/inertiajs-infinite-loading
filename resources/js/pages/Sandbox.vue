@@ -15,18 +15,17 @@ interface Course {
   updated_at: string
 }
 
-interface PaginatedCourses {
+interface CursorPaginatedCourses {
   data: Course[]
-  current_page: number
-  last_page: number
+  next_cursor: string | null
+  prev_cursor: string | null
   per_page: number
-  total: number
   next_page_url: string | null
   prev_page_url: string | null
 }
 
 defineProps<{
-  courses: PaginatedCourses
+  courses: CursorPaginatedCourses
 }>()
 </script>
 
@@ -38,7 +37,7 @@ defineProps<{
       <div class="mb-8">
         <h1 class="text-3xl font-bold">Infinite Scroll Sandbox</h1>
         <p class="text-muted-foreground mt-2">
-          Exploring infinite scrolling with {{ courses.total }} courses
+          Exploring infinite scrolling with cursor pagination
         </p>
       </div>
 
@@ -78,10 +77,25 @@ defineProps<{
         </Card>
       </div>
 
-      <!-- Pagination info -->
+      <!-- Cursor pagination info -->
       <div class="mt-8 text-center text-sm text-muted-foreground">
-        Showing {{ courses.data.length }} of {{ courses.total }} courses
-        (Page {{ courses.current_page }} of {{ courses.last_page }})
+        Showing {{ courses.data.length }} courses per page
+        <div class="flex justify-center gap-4 mt-2">
+          <a 
+            v-if="courses.prev_page_url" 
+            :href="courses.prev_page_url"
+            class="text-blue-600 hover:text-blue-800"
+          >
+            ← Previous
+          </a>
+          <a 
+            v-if="courses.next_page_url" 
+            :href="courses.next_page_url"
+            class="text-blue-600 hover:text-blue-800"
+          >
+            Next →
+          </a>
+        </div>
       </div>
     </div>
   </AppLayout>
