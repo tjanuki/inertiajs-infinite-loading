@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,6 +31,12 @@ const props = defineProps<{
 }>()
 
 const loading = ref(false)
+const scrollContainer = ref<HTMLElement>()
+const previousScrollHeight = ref(0)
+
+const reversedCourses = computed(() => {
+  return [...props.courses.data].reverse()
+})
 
 const hasMore = computed(() => {
   return props.courses.next_page_url !== null
@@ -41,12 +47,25 @@ const loadMore = () => {
   
   loading.value = true
   
+  // Save current scroll position
+  if (scrollContainer.value) {
+    previousScrollHeight.value = scrollContainer.value.scrollHeight
+  }
+  
   router.visit(props.courses.next_page_url!, {
     only: ['courses'],
     preserveState: true,
     preserveUrl: true,
     onFinish: () => {
       loading.value = false
+      // Adjust scroll position after new content loads
+      nextTick(() => {
+        if (scrollContainer.value) {
+          const newScrollHeight = scrollContainer.value.scrollHeight
+          const heightDifference = newScrollHeight - previousScrollHeight.value
+          scrollContainer.value.scrollTop += heightDifference
+        }
+      })
     }
   })
 }
@@ -64,8 +83,27 @@ const loadMore = () => {
         </p>
       </div>
 
-      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card v-for="course in courses.data" :key="course.id" class="h-fit">
+      <div ref="scrollContainer" class="overflow-y-auto max-h-screen">
+        <!-- Load More Button -->
+        <div class="mb-8 text-center">
+          <p class="text-sm text-muted-foreground mb-4">
+            Showing {{ courses.data.length }} courses
+          </p>
+          <Button 
+            v-if="hasMore"
+            @click="loadMore"
+            :disabled="loading"
+            class="px-8 py-2"
+          >
+            {{ loading ? 'Loading...' : 'Load More' }}
+          </Button>
+          <p v-else class="text-sm text-muted-foreground">
+            No more courses to load
+          </p>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card v-for="course in reversedCourses" :key="course.id" class="h-fit">
           <CardHeader>
             <div class="flex items-start justify-between">
               <div class="flex-1">
@@ -98,24 +136,7 @@ const loadMore = () => {
             </div>
           </CardFooter>
         </Card>
-      </div>
-
-      <!-- Load More Button -->
-      <div class="mt-8 text-center">
-        <p class="text-sm text-muted-foreground mb-4">
-          Showing {{ courses.data.length }} courses
-        </p>
-        <Button 
-          v-if="hasMore"
-          @click="loadMore"
-          :disabled="loading"
-          class="px-8 py-2"
-        >
-          {{ loading ? 'Loading...' : 'Load More' }}
-        </Button>
-        <p v-else class="text-sm text-muted-foreground">
-          No more courses to load
-        </p>
+        </div>
       </div>
     </div>
   </AppLayout>

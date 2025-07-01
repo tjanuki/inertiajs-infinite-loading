@@ -12,7 +12,7 @@ class SandboxController extends Controller
     {
         $courses = Course::query()
             ->orderBy('id', 'desc')
-            ->cursorPaginate(3);
+            ->cursorPaginate(9);
 
         return Inertia::render('Sandbox', [
             'courses' => Inertia::deepMerge($courses),
