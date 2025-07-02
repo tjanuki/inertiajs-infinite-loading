@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue'
+import { computed, ref, nextTick, onMounted } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -44,14 +44,14 @@ const hasMore = computed(() => {
 
 const loadMore = () => {
   if (loading.value || !hasMore.value) return
-  
+
   loading.value = true
-  
+
   // Save current scroll position
   if (scrollContainer.value) {
     previousScrollHeight.value = scrollContainer.value.scrollHeight
   }
-  
+
   router.visit(props.courses.next_page_url!, {
     only: ['courses'],
     preserveState: true,
@@ -69,27 +69,37 @@ const loadMore = () => {
     }
   })
 }
+
+onMounted(() => {
+  nextTick(() => {
+    if (scrollContainer.value) {
+      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
+    }
+  })
+})
 </script>
 
 <template>
   <Head title="Infinite Scroll Sandbox" />
 
   <AppLayout>
-    <div class="container mx-auto py-8">
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold">Infinite Scroll Sandbox</h1>
-        <p class="text-muted-foreground mt-2">
-          Exploring infinite scrolling with cursor pagination
-        </p>
+    <div class="flex flex-col h-screen px-2">
+      <div class="container mx-auto py-8 flex-shrink-0">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold">Infinite Scroll Sandbox</h1>
+          <p class="text-muted-foreground mt-2">
+            Exploring infinite scrolling with cursor pagination
+          </p>
+        </div>
       </div>
 
-      <div ref="scrollContainer" class="overflow-y-auto max-h-screen">
+      <div ref="scrollContainer" class="flex-1 overflow-y-auto container mx-auto px-8">
         <!-- Load More Button -->
         <div class="mb-8 text-center">
           <p class="text-sm text-muted-foreground mb-4">
             Showing {{ courses.data.length }} courses
           </p>
-          <Button 
+          <Button
             v-if="hasMore"
             @click="loadMore"
             :disabled="loading"
@@ -110,11 +120,11 @@ const loadMore = () => {
                 <CardTitle class="text-lg">{{ course.title }}</CardTitle>
                 <CardDescription class="mt-1">by {{ course.instructor }}</CardDescription>
               </div>
-              <span 
+              <span
                 :class="[
                   'px-2 py-1 text-xs font-medium rounded-full',
-                  course.level === 'beginner' ? 'bg-green-100 text-green-800' : 
-                  course.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' : 
+                  course.level === 'beginner' ? 'bg-green-100 text-green-800' :
+                  course.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-red-100 text-red-800'
                 ]"
               >
