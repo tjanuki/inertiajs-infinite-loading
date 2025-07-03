@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, nextTick, onMounted } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
+import { useIntersectionObserver } from '@vueuse/core'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -33,6 +34,7 @@ const props = defineProps<{
 const loading = ref(false)
 const scrollContainer = ref<HTMLElement>()
 const previousScrollHeight = ref(0)
+const loadMoreTrigger = ref<HTMLElement>()
 
 const reversedCourses = computed(() => {
   return [...props.courses.data].reverse()
@@ -40,6 +42,10 @@ const reversedCourses = computed(() => {
 
 const hasMore = computed(() => {
   return props.courses.next_page_url !== null
+})
+
+const reachedEnd = computed(() => {
+  return !hasMore.value
 })
 
 const loadMore = () => {
@@ -70,6 +76,20 @@ const loadMore = () => {
   })
 }
 
+// Set up intersection observer for automatic loading
+const { stop } = useIntersectionObserver(
+  loadMoreTrigger,
+  ([{ isIntersecting }]) => {
+    if (isIntersecting && hasMore.value && !loading.value) {
+      loadMore()
+    }
+  },
+  {
+    threshold: 0.1,
+    rootMargin: '100px'
+  }
+)
+
 onMounted(() => {
   nextTick(() => {
     if (scrollContainer.value) {
@@ -94,19 +114,20 @@ onMounted(() => {
       </div>
 
       <div ref="scrollContainer" class="flex-1 overflow-y-auto container mx-auto px-8">
-        <!-- Load More Button -->
+        <!-- Auto Load More with Intersection Observer -->
         <div class="mb-8 text-center">
           <p class="text-sm text-muted-foreground mb-4">
             Showing {{ courses.data.length }} courses
           </p>
-          <Button
-            v-if="hasMore"
-            @click="loadMore"
-            :disabled="loading"
-            class="px-8 py-2"
-          >
-            {{ loading ? 'Loading...' : 'Load More' }}
-          </Button>
+          <div v-if="hasMore" ref="loadMoreTrigger" class="py-4">
+            <Button
+              @click="loadMore"
+              :disabled="loading"
+              class="px-8 py-2"
+            >
+              {{ loading ? 'Loading...' : 'Load More' }}
+            </Button>
+          </div>
           <p v-else class="text-sm text-muted-foreground">
             No more courses to load
           </p>
